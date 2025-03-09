@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/MANTRA-Chain/mantrachain/v3/client/docs/evmosswagger"
+
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/client/v2/autocli"
@@ -148,7 +150,6 @@ import (
 	feemarketkeeper "github.com/evmos/evmos/v20/x/feemarket/keeper"
 	feemarkettypes "github.com/evmos/evmos/v20/x/feemarket/types"
 	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
 	marketmap "github.com/skip-mev/connect/v2/x/marketmap"
 	marketmapkeeper "github.com/skip-mev/connect/v2/x/marketmap/keeper"
 	marketmaptypes "github.com/skip-mev/connect/v2/x/marketmap/types"
@@ -157,8 +158,8 @@ import (
 	oracletypes "github.com/skip-mev/connect/v2/x/oracle/types"
 	"github.com/spf13/cast"
 
-	//nolint: gci
-	_ "github.com/MANTRA-Chain/mantrachain/v3/client/docs/statik"
+	"github.com/MANTRA-Chain/mantrachain/v3/client/docs/mantraswagger"
+
 	// Overriders
 	"github.com/evmos/evmos/v20/x/ibc/transfer"
 	ibctransferkeeper "github.com/evmos/evmos/v20/x/ibc/transfer/keeper"
@@ -632,7 +633,7 @@ func New(
 
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -1299,13 +1300,21 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig
 
 // RegisterSwaggerAPI registers swagger route with API Server.
 func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router) {
-	statikFS, err := fs.New()
-	if err != nil {
-		panic(err)
-	}
+	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Prepend "swagger/" to the path to access the swagger directory in the embedded filesystem
+		r.URL.Path = "swagger/" + r.URL.Path
+		http.FileServer(mantraswagger.FS).ServeHTTP(w, r)
+	})))
 
-	staticServer := http.FileServer(statikFS)
-	rtr.PathPrefix("").Handler(staticServer)
+	// To load openapi
+	//rtr.PathPrefix("/openapi/").Handler(http.StripPrefix("/openapi/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//	// Prepend "swagger/" to the path to access the swagger directory in the embedded filesystem
+	//	r.URL.Path = "openapi/" + r.URL.Path
+	//	http.FileServer(mantraswagger.FS).ServeHTTP(w, r)
+	//})))
+
+	// Serve Evmos Swagger docs at root path
+	rtr.PathPrefix("").Handler(http.FileServer(evmosswagger.FS))
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
