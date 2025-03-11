@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/MANTRA-Chain/mantrachain/v3/app/ante"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	evmosante "github.com/evmos/evmos/v20/app/ante"
@@ -21,7 +22,7 @@ func NewEvmosAnteHandlerOptionsFromApp(app *App, txConfig client.TxConfig, maxGa
 		IBCKeeper:              app.IBCKeeper,
 		FeeMarketKeeper:        app.FeeMarketKeeper,
 		SignModeHandler:        txConfig.SignModeHandler(),
-		SigGasConsumer:         evmosante.SigVerificationGasConsumer,
+		SigGasConsumer:         ante.SigVerificationGasConsumer,
 		MaxTxGasWanted:         maxGasWanted,
 		TxFeeChecker:           ethante.NewDynamicFeeChecker(app.EvmKeeper),
 		StakingKeeper:          app.StakingKeeper,
