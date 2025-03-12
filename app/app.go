@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MANTRA-Chain/mantrachain/v3/x/unifiedaccount"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"io"
 	"net/http"
 	"os"
@@ -600,9 +602,11 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
+	unifiedAcc := unifiedAccount.NewUnifiedAccount(app.BankKeeper, address.Bech32Codec{Bech32Prefix: "mantra"}) // TODO: avoid "mantra" literal
 	app.BankKeeper.BaseSendKeeper = app.BankKeeper.BaseSendKeeper.SetHooks(
 		banktypes.NewMultiBankHooks(
 			app.TokenFactoryKeeper.Hooks(),
+			unifiedAcc,
 		))
 
 	// Register the proposal types
@@ -633,7 +637,7 @@ func New(
 
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			// register the governance hooks
+		// register the governance hooks
 		),
 	)
 
@@ -1061,7 +1065,7 @@ func New(
 	app.ScopedWasmKeeper = scopedWasmKeeper
 	app.ScopedIBCFeeKeeper = scopedIBCFeeKeeper
 
-	app.setAnteHandler(txConfig, wasmConfig, keys[wasmtypes.StoreKey], cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted)))
+	app.setAnteHandler(txConfig, wasmConfig, keys[wasmtypes.StoreKey], cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted)), &unifiedAcc)
 	// app.setPostHandler()
 
 	// oracle initialization
@@ -1108,7 +1112,8 @@ func New(
 	return app
 }
 
-func (app *App) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtypes.NodeConfig, txCounterStoreKey *storetypes.KVStoreKey, maxGasWanted uint64) {
+func (app *App) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtypes.NodeConfig,
+	txCounterStoreKey *storetypes.KVStoreKey, maxGasWanted uint64, uAccount *unifiedAccount.UnifiedAccount) {
 	evmosHandlerOpts := NewEvmosAnteHandlerOptionsFromApp(app, txConfig, maxGasWanted)
 
 	if err := evmosHandlerOpts.Validate(); err != nil {
@@ -1123,6 +1128,7 @@ func (app *App) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtypes.No
 		TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
 		CircuitKeeper:         &app.CircuitKeeper,
 		SanctionKeeper:        &app.SanctionKeeper,
+		UnifiedAccount:        uAccount,
 	}
 
 	if err := handlerOpts.Validate(); err != nil {

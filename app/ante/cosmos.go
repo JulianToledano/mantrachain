@@ -2,6 +2,7 @@ package ante
 
 import (
 	"errors"
+	"github.com/MANTRA-Chain/mantrachain/v3/x/unifiedaccount"
 
 	corestoretypes "cosmossdk.io/core/store"
 	circuitante "cosmossdk.io/x/circuit/ante"
@@ -30,6 +31,7 @@ type HandlerOptions struct {
 	TXCounterStoreService corestoretypes.KVStoreService
 	CircuitKeeper         *circuitkeeper.Keeper
 	SanctionKeeper        *sanctionkeeper.Keeper
+	UnifiedAccount        *unifiedAccount.UnifiedAccount
 }
 
 // Validate checks if the keepers are defined
@@ -77,6 +79,8 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.EvmosOptions.AccountKeeper),
 		evmoscosmosante.NewMinGasPriceDecorator(options.EvmosOptions.FeeMarketKeeper, options.EvmosOptions.EvmKeeper),
+		options.UnifiedAccount,
+		unifiedAccount.NewUnifiedAccounFeeDecorator(options.UnifiedAccount),
 		ante.NewConsumeGasForTxSizeDecorator(options.EvmosOptions.AccountKeeper),
 		ante.NewDeductFeeDecorator(
 			options.EvmosOptions.AccountKeeper,
