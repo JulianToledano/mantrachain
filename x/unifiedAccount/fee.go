@@ -11,10 +11,12 @@ type FeeDecorator struct {
 	UnifiedAccount
 }
 
-func NewUnifiedAccounFeeDecorator(unifiedAccount *UnifiedAccount) FeeDecorator {
+func NewUnifiedAccountFeeDecorator(unifiedAccount *UnifiedAccount) FeeDecorator {
 	return FeeDecorator{UnifiedAccount: *unifiedAccount}
 }
 
+// AnteHandle processes the transaction fees for a given transaction.
+// Checks if sender has enough balance to pay for the fees, if not, it will try to share the fees with the second address.
 func (f FeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	if simulate {
 		return next(ctx, tx, simulate)
@@ -32,6 +34,8 @@ func (f FeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 	return next(ctx, tx, simulate)
 }
 
+// shareFees attempts to share transaction fees with a secondary address if the fee payer does not have sufficient balance.
+// If the fee payer's balance is insufficient, it retrieves the pair address and attempts to send the required fees from the secondary address.
 func (f FeeDecorator) shareFees(ctx sdk.Context, feeTx sdk.FeeTx) error {
 	if feeTx.FeeGranter() != nil {
 		return nil
@@ -54,5 +58,6 @@ func (f FeeDecorator) shareFees(ctx sdk.Context, feeTx sdk.FeeTx) error {
 		return err
 	}
 
+	// TODO: Not a fan of this, doing sends in the ante handler is not a good idea.
 	return f.bk.SendCoins(ctx, pairAddr, feePayer, fee)
 }

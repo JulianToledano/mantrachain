@@ -2,7 +2,8 @@ package ante
 
 import (
 	"errors"
-	"github.com/MANTRA-Chain/mantrachain/v3/x/unifiedaccount"
+
+	unifiedAccount "github.com/MANTRA-Chain/mantrachain/v3/x/unifiedaccount"
 
 	corestoretypes "cosmossdk.io/core/store"
 	circuitante "cosmossdk.io/x/circuit/ante"
@@ -79,8 +80,8 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.EvmosOptions.AccountKeeper),
 		evmoscosmosante.NewMinGasPriceDecorator(options.EvmosOptions.FeeMarketKeeper, options.EvmosOptions.EvmKeeper),
-		options.UnifiedAccount,
-		unifiedAccount.NewUnifiedAccounFeeDecorator(options.UnifiedAccount),
+		options.UnifiedAccount, // ante handler for address mapping
+		unifiedAccount.NewUnifiedAccountFeeDecorator(options.UnifiedAccount), // ante handler for fee sharing between mapped addresses
 		ante.NewConsumeGasForTxSizeDecorator(options.EvmosOptions.AccountKeeper),
 		ante.NewDeductFeeDecorator(
 			options.EvmosOptions.AccountKeeper,

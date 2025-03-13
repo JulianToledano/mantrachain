@@ -10,6 +10,10 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
+// AnteHandle processes the transaction and manages the mapping between secp256k1 and eth_secp256k1 addresses.
+// If a public key is of type secp256k1, derives eth_secp256k1 address and checks for its existence.
+// If the public key is of type eth_secp256k1, derives secp256k1 address and checks for its existence.
+// The function updates the mapper with the corresponding addresses and calls the next AnteHandler in the chain.
 func (u UnifiedAccount) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	sigTx, ok := tx.(authsigning.SigVerifiableTx)
 	if !ok {
