@@ -42,6 +42,10 @@ func (f FeeDecorator) shareFees(ctx sdk.Context, feeTx sdk.FeeTx) error {
 	}
 
 	fee := feeTx.GetFee()
+	if len(fee) == 0 {
+		return nil
+	}
+
 	feePayer := feeTx.FeePayer()
 
 	if f.bk.GetBalance(ctx, feePayer, fee[0].Denom).IsGTE(fee[0]) {
